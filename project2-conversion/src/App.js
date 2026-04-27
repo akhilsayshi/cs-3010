@@ -11,11 +11,22 @@ import Account from './components/Account';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+
+  const handleLogin = (user) => {
+    setIsLoggedIn(true);
+    setUsername(user);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUsername('');
+  };
 
   return (
     <Router>
       <div className="app-wrapper">
-        <Navbar isLoggedIn={isLoggedIn} onLogout={() => setIsLoggedIn(false)} />
+        <Navbar isLoggedIn={isLoggedIn} onLogout={handleLogout} />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -24,7 +35,7 @@ function App() {
               element={
                 isLoggedIn
                   ? <Navigate to="/" replace />
-                  : <Login onLogin={() => setIsLoggedIn(true)} />
+                  : <Login onLogin={handleLogin} />
               }
             />
             <Route
@@ -32,14 +43,14 @@ function App() {
               element={
                 isLoggedIn
                   ? <Navigate to="/" replace />
-                  : <Registration onRegister={() => setIsLoggedIn(true)} />
+                  : <Registration onRegister={handleLogin} />
               }
             />
             <Route
               path="/account"
               element={
                 isLoggedIn
-                  ? <Account />
+                  ? <Account username={username} />
                   : <Navigate to="/login" replace />
               }
             />

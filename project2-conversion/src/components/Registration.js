@@ -5,18 +5,40 @@ function Registration({ onRegister }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onRegister();
-    navigate('/');
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:3001/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, repeatPassword })
+      });
+
+      if (response.ok) {
+        onRegister(username);
+        navigate('/');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setError('Could not connect to server. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReset = () => {
     setUsername('');
     setPassword('');
     setRepeatPassword('');
+    setError('');
   };
 
   return (
@@ -26,6 +48,11 @@ function Registration({ onRegister }) {
           <div className="card shadow">
             <div className="card-body">
               <h2 className="card-title text-center mb-4">Registration</h2>
+
+              {error && (
+                <div className="alert alert-danger" role="alert">{error}</div>
+              )}
+
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="username" className="form-label">User Name</label>
@@ -64,8 +91,12 @@ function Registration({ onRegister }) {
                   />
                 </div>
                 <div className="d-grid gap-2">
-                  <button type="submit" className="btn btn-primary">Submit</button>
-                  <button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? 'Registering...' : 'Submit'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleReset} disabled={loading}>
+                    Reset
+                  </button>
                 </div>
               </form>
             </div>

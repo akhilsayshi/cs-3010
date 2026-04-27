@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const US_STATES = [
   { value: 'AL', label: 'Alabama' }, { value: 'AK', label: 'Alaska' },
@@ -33,21 +33,79 @@ const EMPTY_FORM = {
   city: '', state: '', zipCode: '', phone: '', email: ''
 };
 
-function Account() {
+function Account({ username }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [loadError, setLoadError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // GET current account data when the page loads
+  useEffect(() => {
+    const fetchAccount = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:3001/api/account?username=${encodeURIComponent(username)}`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setForm(data);
+        } else {
+          setLoadError('Could not load account data.');
+        }
+      } catch (err) {
+        setLoadError('Could not connect to server.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAccount();
+  }, [username]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  // POST updated account data on submit
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // No validation required - assume all info is correct
+    setSaving(true);
+    setSaveError('');
+
+    try {
+      const response = await fetch('http://localhost:3001/api/account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+
+      if (!response.ok) {
+        setSaveError('Could not save account data. Please try again.');
+      }
+    } catch (err) {
+      setSaveError('Could not connect to server. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
     setForm(EMPTY_FORM);
+    setSaveError('');
   };
+
+  if (loading) {
+    return (
+      <div className="container my-5 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3">Loading account data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container my-5">
@@ -56,6 +114,14 @@ function Account() {
           <div className="card shadow">
             <div className="card-body">
               <h2 className="card-title text-center mb-4">Account Information</h2>
+
+              {loadError && (
+                <div className="alert alert-warning" role="alert">{loadError}</div>
+              )}
+              {saveError && (
+                <div className="alert alert-danger" role="alert">{saveError}</div>
+              )}
+
               <form onSubmit={handleSubmit}>
                 <div className="row">
                   <div className="col-md-6 mb-3">
@@ -180,8 +246,12 @@ function Account() {
                 </div>
 
                 <div className="d-grid gap-2">
-                  <button type="submit" className="btn btn-primary">Submit</button>
-                  <button type="button" className="btn btn-secondary" onClick={handleReset}>Reset</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? 'Saving...' : 'Submit'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleReset} disabled={saving}>
+                    Reset
+                  </button>
                 </div>
               </form>
             </div>
