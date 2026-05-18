@@ -12,15 +12,18 @@ import Account from './components/Account';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
+  const [userId, setUserId] = useState(null);
 
-  const handleLogin = (user) => {
+  const handleLogin = (user, id) => {
     setIsLoggedIn(true);
     setUsername(user);
+    setUserId(id);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUsername('');
+    setUserId(null);
   };
 
   return (
@@ -50,7 +53,7 @@ function App() {
               path="/account"
               element={
                 isLoggedIn
-                  ? <Account username={username} />
+                  ? <Account username={username} userId={userId} />
                   : <Navigate to="/login" replace />
               }
             />

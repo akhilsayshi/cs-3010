@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { registerUser } from '../api';
 
 function Registration({ onRegister }) {
   const [username, setUsername] = useState('');
@@ -13,22 +14,21 @@ function Registration({ onRegister }) {
     e.preventDefault();
     setLoading(true);
     setError('');
-
+    if (password !== repeatPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
     try {
-      const response = await fetch('http://localhost:3001/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, repeatPassword })
-      });
-
-      if (response.ok) {
-        onRegister(username);
-        navigate('/');
-      } else {
-        setError('Registration failed. Please try again.');
-      }
+      const data = await registerUser(username, password);
+      onRegister(username, data.userId);
+      navigate('/');
     } catch (err) {
-      setError('Could not connect to server. Please try again.');
+      if (err.message === 'Username already exists.') {
+        setError(<><span>{err.message} </span><Link to="/login">Click here to log in.</Link></>);
+      } else {
+        setError('Could not connect to server. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

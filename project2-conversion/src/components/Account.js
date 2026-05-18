@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getAccountDetails, upsertAccountDetails } from '../api';
 
 const US_STATES = [
   { value: 'AL', label: 'Alabama' }, { value: 'AK', label: 'Alaska' },
@@ -33,10 +34,11 @@ const EMPTY_FORM = {
   city: '', state: '', zipCode: '', phone: '', email: ''
 };
 
-function Account({ username }) {
+function Account({ userId }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [loadError, setLoadError] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -44,25 +46,30 @@ function Account({ username }) {
   useEffect(() => {
     const fetchAccount = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:3001/api/account?username=${encodeURIComponent(username)}`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setForm(data);
+        const data = await getAccountDetails(userId);
+        if (data) {
+          setForm({
+            firstName: data.first_name || '',
+            lastName: data.last_name || '',
+            address1: data.address1 || '',
+            address2: data.address2 || '',
+            city: data.city || '',
+            state: data.state || '',
+            zipCode: data.zip_code || '',
+            phone: data.phone || '',
+            email: data.email || ''
+          });
         } else {
-          setLoadError('Could not load account data.');
+          setForm(EMPTY_FORM);
         }
       } catch (err) {
-        setLoadError('Could not connect to server.');
+        setLoadError('Could not load account data.');
       } finally {
         setLoading(false);
       }
     };
-
     fetchAccount();
-  }, [username]);
+  }, [userId]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -73,19 +80,24 @@ function Account({ username }) {
     e.preventDefault();
     setSaving(true);
     setSaveError('');
-
+    setSaveSuccess('');
     try {
-      const response = await fetch('http://localhost:3001/api/account', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+      const data = await upsertAccountDetails(userId, form);
+      // If 201, new record; if 200, updated record
+      setForm({
+        firstName: data.first_name || '',
+        lastName: data.last_name || '',
+        address1: data.address1 || '',
+        address2: data.address2 || '',
+        city: data.city || '',
+        state: data.state || '',
+        zipCode: data.zip_code || '',
+        phone: data.phone || '',
+        email: data.email || ''
       });
-
-      if (!response.ok) {
-        setSaveError('Could not save account data. Please try again.');
-      }
+      setSaveSuccess(data.created ? 'Account information saved successfully!' : 'Account information updated successfully!');
     } catch (err) {
-      setSaveError('Could not connect to server. Please try again.');
+      setSaveError('Could not save account data. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -94,6 +106,7 @@ function Account({ username }) {
   const handleReset = () => {
     setForm(EMPTY_FORM);
     setSaveError('');
+    setSaveSuccess('');
   };
 
   if (loading) {
@@ -120,6 +133,9 @@ function Account({ username }) {
               )}
               {saveError && (
                 <div className="alert alert-danger" role="alert">{saveError}</div>
+              )}
+              {saveSuccess && (
+                <div className="alert alert-success" role="alert">{saveSuccess}</div>
               )}
 
               <form onSubmit={handleSubmit}>

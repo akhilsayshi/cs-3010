@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { loginUser } from '../api';
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -12,22 +13,18 @@ function Login({ onLogin }) {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
-      const response = await fetch('http://localhost:3001/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-
-      if (response.ok) {
-        onLogin(username);
-        navigate('/');
-      } else {
-        setError('Login failed. Please try again.');
-      }
+      const data = await loginUser(username, password);
+      onLogin(username, data.userId);
+      navigate('/');
     } catch (err) {
-      setError('Could not connect to server. Please try again.');
+      if (err.message === 'No account with that username.') {
+        setError(<><span>{err.message} </span><Link to="/registration">Click here to register.</Link></>);
+      } else if (err.message === 'Incorrect password.') {
+        setError(err.message);
+      } else {
+        setError('Could not connect to server. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
